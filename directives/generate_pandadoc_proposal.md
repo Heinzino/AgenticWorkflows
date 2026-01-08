@@ -155,13 +155,13 @@ Should extract all fields and create a complete proposal.
 
 Required in `.env`:
 ```bash
-ANTHROPIC_API_KEY=your_anthropic_key_here
+OPENROUTER_API_KEY=your_openrouter_key_here
 PANDADOC_API_KEY=your_pandadoc_api_key_here
 PANDADOC_TEMPLATE_ID=your_template_id_here
 ```
 
 Get credentials:
-- **Anthropic API**: https://console.anthropic.com/
+- **OpenRouter API**: https://openrouter.ai/keys (uses Claude 3.5 Sonnet for cost-effective extraction)
 - **PandaDoc API**: https://app.pandadoc.com/a/#/settings/integrations/api
 
 ## Tips for Better Extraction

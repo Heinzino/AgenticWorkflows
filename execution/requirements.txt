@@ -16,8 +16,5 @@ google-api-python-client>=2.100.0
 # Environment management
 python-dotenv>=1.0.0
 
-# AI/LLM
-anthropic>=0.18.0  # For proposal data extraction
-
 # Modal (for webhooks)
 modal>=0.55.0

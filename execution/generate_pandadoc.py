@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import requests
-from anthropic import Anthropic
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -35,61 +34,87 @@ DEFAULT_SENDER = {
 }
 
 
-def extract_proposal_data(input_text: str, anthropic_api_key: str) -> Dict[str, Optional[str]]:
+def extract_proposal_data(input_text: str, openrouter_api_key: str) -> Dict[str, Optional[str]]:
     """
-    Extract proposal fields from input text using Claude API.
+    Extract proposal fields from input text using Claude via OpenRouter.
 
     Args:
         input_text: Sales call transcript or description
-        anthropic_api_key: Anthropic API key
+        openrouter_api_key: OpenRouter API key
 
     Returns:
         Dictionary with all proposal fields (23 total)
     """
     print("Extracting proposal data from input text...")
 
-    client = Anthropic(api_key=anthropic_api_key)
+    # Enhanced system prompt for natural, human-like extraction
+    system_prompt = """You are an expert business proposal writer who excels at understanding client needs from conversations.
 
-    # System prompt for structured extraction
-    system_prompt = """You are a proposal data extraction assistant. Extract all relevant fields from the sales call transcript or description provided.
+Your task: Extract proposal information from sales call notes and create professional, compelling proposal content.
 
-Extract the following fields:
+When writing descriptions:
+- Use clear, professional business language
+- Write in second person ("you need", "your team") for client-facing content
+- Be specific and actionable
+- Highlight business value and outcomes
+- Keep titles concise (3-7 words)
+- Make descriptions substantive (2-4 sentences)
+
+Extract these fields from the conversation:
+
+**Client Information:**
 - Client.Company: Company name
 - Client.FirstName: Client's first name
 - Client.LastName: Client's last name
-- ProposalTitle: Title for the proposal
-- ProblemTitle: Brief title of the problem/challenge
-- ProblemDescription: Detailed description of the problem
-- SolutionTitle: Brief title of the solution
-- SolutionDescription: Detailed description of the proposed solution
-- ScopeOfWork: Scope of work details
-- PaymentTerms: Payment terms and conditions
-- Task1Name through Task4Name: Names of up to 4 project tasks
-- Task1Duration through Task4Duration: Duration for each task (e.g., "1 week", "3 days")
-- TotalProjectDuration: Total project duration
 
-Return ONLY a JSON object with these exact field names. Use null for any field that cannot be determined from the input.
-Do NOT include Sender fields - those will be added separately."""
+**Proposal Content:**
+- ProposalTitle: Compelling title for the proposal (e.g., "Marketing Automation Solution for Ambition Fitness")
+- ProblemTitle: Clear problem statement (e.g., "Manual Data Entry Bottleneck")
+- ProblemDescription: 2-3 sentences describing the client's challenge, its impact, and why it matters
+- SolutionTitle: Clear solution statement (e.g., "Automated Client Onboarding System")
+- SolutionDescription: 2-3 sentences describing the proposed solution, key features, and expected benefits
+- ScopeOfWork: Detailed scope covering what will be delivered
 
-    user_prompt = f"""Extract proposal data from this sales call transcript/description:
+**Project Structure:**
+- Task1Name through Task4Name: Clear task names (e.g., "Discovery & Requirements Analysis")
+- Task1Duration through Task4Duration: Time estimates (e.g., "1 week", "3 days", "2 weeks")
+- TotalProjectDuration: Overall timeline
+
+**Commercial Terms:**
+- PaymentTerms: Payment structure and terms
+
+Return ONLY a valid JSON object with these exact field names. Use null for fields not mentioned in the input.
+Make the content professional, clear, and compelling - as if writing for a real client proposal."""
+
+    user_prompt = f"""Extract and enhance proposal data from this sales call information:
 
 {input_text}
 
-Return a JSON object with all extracted fields."""
+Return a JSON object with all fields. Make descriptions professional and client-ready."""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=2000,
-            system=system_prompt,
-            messages=[{
-                "role": "user",
-                "content": user_prompt
-            }]
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {openrouter_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "anthropic/claude-3.5-sonnet",
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "max_tokens": 2000,
+                "temperature": 0.7
+            },
+            timeout=30
         )
+        response.raise_for_status()
 
-        # Extract JSON from response
-        content = response.content[0].text
+        # Extract JSON from OpenRouter response
+        result = response.json()
+        content = result["choices"][0]["message"]["content"]
 
         # Try to parse JSON from response
         # Claude might wrap it in markdown code blocks
@@ -100,11 +125,21 @@ Return a JSON object with all extracted fields."""
 
         extracted_data = json.loads(content)
 
-        # Add default sender information
-        extracted_data.update(DEFAULT_SENDER)
+        # Flatten nested structure if present (e.g., {"Client": {"Company": "X"}} -> {"Client.Company": "X"})
+        flattened = {}
+        for key, value in extracted_data.items():
+            if isinstance(value, dict):
+                # Flatten nested dict
+                for nested_key, nested_value in value.items():
+                    flattened[f"{key}.{nested_key}"] = nested_value
+            else:
+                flattened[key] = value
 
-        print(f"Successfully extracted {len([v for v in extracted_data.values() if v])} fields")
-        return extracted_data
+        # Add default sender information
+        flattened.update(DEFAULT_SENDER)
+
+        print(f"Successfully extracted {len([v for v in flattened.values() if v])} fields")
+        return flattened
 
     except Exception as e:
         print(f"Error during extraction: {e}")
@@ -303,12 +338,13 @@ def main():
     args = parser.parse_args()
 
     # Get API keys from environment
-    anthropic_key = os.getenv('ANTHROPIC_API_KEY')
+    openrouter_key = os.getenv('OPENROUTER_API_KEY')
     pandadoc_key = os.getenv('PANDADOC_API_KEY')
     template_id = args.template_id or os.getenv('PANDADOC_TEMPLATE_ID')
 
-    if not anthropic_key:
-        print("Error: ANTHROPIC_API_KEY not found in environment")
+    if not openrouter_key:
+        print("Error: OPENROUTER_API_KEY not found in environment")
+        print("Get your key from: https://openrouter.ai/keys")
         return 1
 
     if not args.save_only:
@@ -321,7 +357,7 @@ def main():
 
     try:
         # Step 1: Extract data from input
-        extracted_data = extract_proposal_data(args.input, anthropic_key)
+        extracted_data = extract_proposal_data(args.input, openrouter_key)
 
         # Step 2: Save intermediate data
         json_path = save_extracted_data(extracted_data)
