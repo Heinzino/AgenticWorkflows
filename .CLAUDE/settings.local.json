@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python execution/verify_setup.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(cat:*)"
     ]
   }
 }

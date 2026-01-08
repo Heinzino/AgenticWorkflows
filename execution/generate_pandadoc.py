@@ -100,7 +100,7 @@ Return a JSON object with all fields. Make descriptions professional and client-
                 "Content-Type": "application/json"
             },
             json={
-                "model": "anthropic/claude-3.5-sonnet",
+                "model": "anthropic/claude-sonnet-4.5",
                 "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}

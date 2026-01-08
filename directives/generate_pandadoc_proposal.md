@@ -161,7 +161,7 @@ PANDADOC_TEMPLATE_ID=your_template_id_here
 ```
 
 Get credentials:
-- **OpenRouter API**: https://openrouter.ai/keys (uses Claude 3.5 Sonnet for cost-effective extraction)
+- **OpenRouter API**: https://openrouter.ai/keys (uses Claude Sonnet 4 for best-in-class extraction)
 - **PandaDoc API**: https://app.pandadoc.com/a/#/settings/integrations/api
 
 ## Tips for Better Extraction
