@@ -1,5 +1,3 @@
-88% of storage used … If you run out of space, you can't save to Drive, back up Google Photos, or use Gmail. Get 50% off annual plans for 1 year with a special New Year's offer.
-Hyper Icon
 # Agent Instructions
 
 > This file is mirrored across CLAUDE.md, AGENTS.md, and GEMINI.md so the same instructions load in any AI environment.

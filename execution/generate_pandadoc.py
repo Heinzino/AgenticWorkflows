@@ -57,8 +57,12 @@ When writing descriptions:
 - Write in second person ("you need", "your team") for client-facing content
 - Be specific and actionable
 - Highlight business value and outcomes
-- Keep titles concise (3-7 words)
 - Make descriptions substantive (2-4 sentences)
+
+**CRITICAL FORMATTING RULES:**
+- ProposalTitle: SHORT and PUNCHY (2-3 words max, e.g., "B2B Email Marketing" NOT "B2B Corporate Wellness Growth Strategy")
+- ScopeOfWork: Format as BULLET LIST with line breaks between items. Use "\n\n• " to start each deliverable on its own line
+  Example format: "\n\n• First deliverable\n\n• Second deliverable\n\n• Third deliverable"
 
 Extract these fields from the conversation:
 
@@ -68,12 +72,12 @@ Extract these fields from the conversation:
 - Client.LastName: Client's last name
 
 **Proposal Content:**
-- ProposalTitle: Compelling title for the proposal (e.g., "Marketing Automation Solution for Ambition Fitness")
+- ProposalTitle: SHORT, punchy title (2-3 words, e.g., "B2B Email Marketing", "Marketing Automation")
 - ProblemTitle: Clear problem statement (e.g., "Manual Data Entry Bottleneck")
 - ProblemDescription: 2-3 sentences describing the client's challenge, its impact, and why it matters
 - SolutionTitle: Clear solution statement (e.g., "Automated Client Onboarding System")
 - SolutionDescription: 2-3 sentences describing the proposed solution, key features, and expected benefits
-- ScopeOfWork: Detailed scope covering what will be delivered
+- ScopeOfWork: Bullet-formatted list with "\n\n• " before each deliverable. Each item on its own line with clear spacing
 
 **Project Structure:**
 - Task1Name through Task4Name: Clear task names (e.g., "Discovery & Requirements Analysis")
@@ -81,7 +85,64 @@ Extract these fields from the conversation:
 - TotalProjectDuration: Overall timeline
 
 **Commercial Terms:**
-- PaymentTerms: Payment structure and terms
+- PaymentTerms: Format payment terms based on the pricing model. Use appropriate structure:
+
+FOR FIXED-PRICE PROJECTS (e.g., website development, one-time builds):
+"Investment Structure
+
+Total Investment: $[AMOUNT] [CURRENCY]
+
+• Payment due upfront before project commencement
+
+What's Included:
+\n\n• [Deliverable 1]
+\n\n• [Deliverable 2]
+\n\n• [Deliverable 3]
+\n\n• [Deliverable 4]
+
+Project Timeline: [X] business days from [milestone] to [milestone]"
+
+FOR COMMISSION-BASED PRICING (e.g., B2B email marketing):
+"Investment Structure
+
+$[AMOUNT] Setup Fee covers all technical infrastructure:
+\n\n• [Item 1]
+\n\n• [Item 2]
+\n\n• [Item 3]
+\n\n• [Item 4]
+
+Commission: $[AMOUNT] per sold membership
+
+Pricing rationale: At $[monthly price]/month with [X]% monthly churn, average member lifetime is [Y] months = $[LTV] lifetime value. Our commission represents [Z]% of worst-case LTV. Lower churn in your business means higher returns—our fee stays fixed while your profit per member increases.
+
+Choose your commission structure:
+\n\n☐ Option 1: $[AMOUNT] upfront per sold membership
+\n\n☐ Option 2: [X]% of membership revenue for first [Y] months, then member is 100% yours"
+
+FOR SUBSCRIPTION-BASED PRICING (e.g., AI receptionist, software):
+"Investment Structure
+
+Setup Fee: $[AMOUNT] CAD
+\n\n• 50% due upfront ($[HALF])
+\n\n• 50% due upon deployment ($[HALF])
+
+Monthly Subscription: $[AMOUNT] USD/month
+\n\n• First 3 months: $[DISCOUNTED] (50% off)
+\n\n• After 3 months: $[REGULAR]
+
+[If tiered pricing exists, add pricing table showing volume discounts]
+
+Subscription includes:
+\n\n• [Feature 1]
+\n\n• [Feature 2]
+\n\n• [Feature 3]
+\n\n• Platform access & telephone costs
+\n\n• AI usage costs
+
+[If bonus features exist:]
+Bonus Features (No Additional Cost):
+\n\n• [Bonus 1]
+\n\n• [Bonus 2]"
 
 Return ONLY a valid JSON object with these exact field names. Use null for fields not mentioned in the input.
 Make the content professional, clear, and compelling - as if writing for a real client proposal."""
@@ -279,17 +340,14 @@ def create_pandadoc_document(
     payload = {
         "template_uuid": template_id,
         "name": field_data.get("ProposalTitle", "Proposal"),
-        "tokens": tokens
-    }
-
-    # Optional: Add recipient if client email is available
-    if field_data.get("Client.Email"):
-        payload["recipients"] = [{
-            "email": field_data["Client.Email"],
+        "tokens": tokens,
+        "recipients": [{
+            "email": field_data.get("Client.Email", "client@example.com"),
             "first_name": field_data.get("Client.FirstName", ""),
             "last_name": field_data.get("Client.LastName", ""),
             "role": "Client"
         }]
+    }
 
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=30)
